@@ -169,12 +169,15 @@ router.post('/resend-otp', [
     user.emailVerificationOTPExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    // Send OTP
-    await sendOTP(email, emailOTP, 'verification');
+    // Send OTP (don't fail if email fails - OTP is saved in DB)
+    const emailSent = await sendOTP(email, emailOTP, 'verification');
 
     res.json({
       success: true,
-      message: 'OTP sent to your email'
+      message: emailSent 
+        ? 'OTP sent to your email. Please check your inbox.'
+        : 'OTP generated. If you did not receive the email, please try again in a moment.',
+      emailSent: emailSent
     });
   } catch (error) {
     console.error('Resend OTP error:', error);
@@ -216,12 +219,15 @@ router.post('/request-login-otp', [
     user.loginOTPExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    // Send OTP
-    await sendOTP(email, loginOTP, 'login');
+    // Send OTP (don't fail if email fails - OTP is saved in DB)
+    const emailSent = await sendOTP(email, loginOTP, 'login');
 
     res.json({
       success: true,
-      message: 'Login OTP sent to your email'
+      message: emailSent 
+        ? 'Login OTP sent to your email. Please check your inbox.'
+        : 'OTP generated. If you did not receive the email, please try again in a moment.',
+      emailSent: emailSent
     });
   } catch (error) {
     console.error('Request login OTP error:', error);
