@@ -417,22 +417,29 @@ router.post('/force-logout', [
 // @access  Private
 router.get('/me', protect, checkDevice, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('-password');
+    // req.user is already populated by protect middleware
+    if (!req.user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found. Please login again.',
+        code: 'USER_NOT_FOUND'
+      });
+    }
 
     res.json({
       success: true,
       user: {
-        id: user._id,
-        email: user.email,
-        fullName: user.fullName,
-        companyName: user.companyName,
-        phone: user.phone,
-        subscriptionTier: user.subscriptionTier,
-        subscriptionStatus: user.subscriptionStatus,
-        subscriptionStartDate: user.subscriptionStartDate,
-        subscriptionEndDate: user.subscriptionEndDate,
-        role: user.role,
-        isEmailVerified: user.isEmailVerified
+        id: req.user._id,
+        email: req.user.email,
+        fullName: req.user.fullName,
+        companyName: req.user.companyName,
+        phone: req.user.phone,
+        subscriptionTier: req.user.subscriptionTier,
+        subscriptionStatus: req.user.subscriptionStatus,
+        subscriptionStartDate: req.user.subscriptionStartDate,
+        subscriptionEndDate: req.user.subscriptionEndDate,
+        role: req.user.role,
+        isEmailVerified: req.user.isEmailVerified
       }
     });
   } catch (error) {

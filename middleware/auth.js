@@ -31,7 +31,8 @@ exports.protect = async (req, res, next) => {
       if (!req.user) {
         return res.status(401).json({
           success: false,
-          message: 'User not found'
+          message: 'User not found. Please login again.',
+          code: 'USER_NOT_FOUND'
         });
       }
 
