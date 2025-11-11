@@ -31,7 +31,8 @@ router.post('/register', [
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'User already exists with this email'
+        message: 'An account with this email already exists. Please login instead.',
+        code: 'USER_EXISTS'
       });
     }
 
