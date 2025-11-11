@@ -54,13 +54,21 @@ router.post('/register', [
       subscriptionEndDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // 14 days
     });
 
-    // Send verification email
-    await sendOTP(email, emailOTP, 'verification');
+    // Send verification email (don't fail registration if email fails)
+    const emailSent = await sendOTP(email, emailOTP, 'verification');
+    
+    if (!emailSent) {
+      console.warn(`Failed to send verification email to ${email}, but user registered successfully`);
+      // Still return success - user can request resend OTP
+    }
 
     res.status(201).json({
       success: true,
-      message: 'Registration successful. Please verify your email with OTP.',
-      userId: user._id
+      message: emailSent 
+        ? 'Registration successful. Please verify your email with OTP sent to your inbox.'
+        : 'Registration successful. Please request OTP resend if you did not receive the email.',
+      userId: user._id,
+      emailSent: emailSent
     });
   } catch (error) {
     console.error('Registration error:', error);

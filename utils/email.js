@@ -1,14 +1,26 @@
 const nodemailer = require('nodemailer');
 
-// Create transporter
+// Create transporter with proper timeout and connection settings
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
+  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.EMAIL_PORT) || 587,
   secure: false, // true for 465, false for other ports
+  requireTLS: true, // Force TLS
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
-  }
+  },
+  // Connection timeout settings
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000, // 10 seconds
+  socketTimeout: 10000, // 10 seconds
+  // Retry settings
+  pool: true,
+  maxConnections: 1,
+  maxMessages: 3,
+  // Debug (set to false in production)
+  debug: process.env.NODE_ENV === 'development',
+  logger: process.env.NODE_ENV === 'development'
 });
 
 // Send OTP email or notification
@@ -99,11 +111,31 @@ exports.sendOTP = async (email, content, type = 'login', subject = null) => {
       html: html
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent:', info.messageId);
+    // Verify connection first
+    await transporter.verify();
+    console.log('Email server connection verified');
+
+    // Send email with timeout
+    const info = await Promise.race([
+      transporter.sendMail(mailOptions),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Email send timeout')), 15000)
+      )
+    ]);
+
+    console.log('Email sent successfully:', info.messageId);
     return true;
   } catch (error) {
     console.error('Error sending email:', error);
+    console.error('Error details:', {
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      responseCode: error.responseCode
+    });
+    
+    // Don't throw error, just return false so registration/login can continue
+    // The OTP is still saved in database, user can request resend
     return false;
   }
 };
