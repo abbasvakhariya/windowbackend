@@ -111,11 +111,7 @@ exports.sendOTP = async (email, content, type = 'login', subject = null) => {
       html: html
     };
 
-    // Verify connection first
-    await transporter.verify();
-    console.log('Email server connection verified');
-
-    // Send email with timeout
+    // Send email with timeout (don't verify first - it can timeout)
     const info = await Promise.race([
       transporter.sendMail(mailOptions),
       new Promise((_, reject) => 
